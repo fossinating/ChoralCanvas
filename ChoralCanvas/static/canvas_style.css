@@ -1,0 +1,12 @@
+canvas {
+    border: 2px black solid;
+}
+
+main {
+    height: 100%;
+    overflow: hidden;
+}
+
+#canvas_page {
+    display: flex;
+}

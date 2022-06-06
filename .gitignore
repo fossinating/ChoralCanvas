@@ -217,3 +217,7 @@ htmlcov/
 .coverage
 .coverage.*
 *,cover
+
+# dont save the database lmao
+
+test.db

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% include '_requesthelper.html' %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='canvas_style.css') }}">
+{% endblock %}
+{% block title %}
+    {{ canvas.name }}
+{% endblock %}
+{% block content %}
+    <div>
+
+    </div>
+    <div id="canvas_page">
+        <canvas id="canvas" width="1000" height="1000"></canvas>
+        <div id="canvas_info">
+
+        </div>
+    </div>
+    {{ canvas.id }}
+    {{ canvas.owner }}
+{% endblock %}
+
+{% block script %}
+    <script>
+        var canvas = document.getElementById("canvas");
+        canvas.putImageData({{ canvas.canvas_image }}, 0, 0)
+    </script>
+{% endblock %}

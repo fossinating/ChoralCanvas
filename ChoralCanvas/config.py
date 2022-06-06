@@ -1,13 +1,18 @@
-import os
-# Basic config with security for forms and session cookie
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
-CSRF_ENABLED = True
 SECRET_KEY = 'thisismyscretkey'
+WTF_CSRF_SECRET_KEY = "wtfkey"
 
+SECURITY_PASSWORD_HASH = "argon2"
 
-AUTH_TYPE = 1 # Database Authentication
+# user registration information
+SECURITY_REGISTERABLE = True
+SECURITY_USERNAME_ENABLE = True
+SECURITY_USERNAME_REQUIRED = True
+SECURITY_PASSWORD_CHECK_BREACHED = True
+SECURITY_PASSWORD_BREACHED_COUNT = 50
+SECURITY_PASSWORD_COMPLEXITY_CHECKER = "zxcvbn"
+
+AUTH_TYPE = 1  # Database Authentication
 AUTH_USER_REGISTRATION = True
 AUTH_USER_REGISTRATION_ROLE = 'Public'
 FAB_PASSWORD_COMPLEXITY_ENABLED = True

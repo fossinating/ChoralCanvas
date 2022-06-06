@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Create Canvas{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    {% from "_formhelpers.html" import render_field %}
+    <form method=post action="/create_canvas">
+      <dl>
+        {{ form.hidden_tag() }}
+        {{ render_field(form.id) }}
+        {{ render_field(form.max_paint) }}
+        {{ render_field(form.paint_regen) }}
+        {{ render_field(form.allow_anonymous) }}
+      </dl>
+      <p><input type=submit value=Register>
+    </form>
+{% endblock %}

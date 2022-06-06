@@ -1,0 +1,30 @@
+<!doctype html>
+<head>
+    <title>{% block title %}{% endblock %} - Coral Canvas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav>
+      <ul>
+        <li class="navbar-left"><a href="/">Coral Canvas</a></li>
+        {# <li class="navbar-left"><a href="/browse">Browse</a></li> #}
+        {% if current_user.is_authenticated %}
+            <li class="navbar-right"><a href="{{ url_for('security.logout') }}">Log Out</a>
+            <li class="navbar-right"><a href="/user/{{ current_user.id }}">{{ current_user.username }}</a>
+        {% else %}
+            <li class="navbar-right"><a href="{{ url_for('security.login') }}">Log In</a>
+            <li class="navbar-right"><a href="{{ url_for('security.register') }}">Register</a>
+        {% endif %}
+      </ul>
+    </nav>
+    <messages>
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
+    </messages>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+{% block script %}{% endblock %}

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Home{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    Welcome to Coral Canvas{% if current_user.is_authenticated %}, {{ current_user.username }}{% endif %}!
+{% endblock %}
