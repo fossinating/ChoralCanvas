@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='canvas_style.css') }}">
+{% endblock %}
+{% block title %}
+    {{ canvas.name }}
+{% endblock %}
+{% block content %}
+    <div id="canvas_container" class="edit">
+        <canvas id="canvas"></canvas>
+        <div id="paint_level_container">
+            <label for="paint_level">Paint Remaining:</label>
+            <progress id="paint_level" value="{{ canvas.max_paint }}" max="{{ canvas.max_paint }}"></progress>
+        </div>
+        <div class="canvas_side_panel">
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        // Clamp number between two values with the following line:
+        const clamp = (num, min, max) => Math.min(Math.max(num, min), max),
+            margin = 50;
+        let memCanvas,
+            memCtx,
+            visibleCanvas,
+            visibleCtx,
+            dragStart = { x: 0, y: 0 },
+            prevPos = { x: 0, y: 0 },
+            currPos = { x: 0, y: 0 },
+            drawing = false,
+            panning = false,
+            initialPinchDistance = null,
+            lastZoom = 1,
+            zoom = 1,
+            cameraOffset,
+            color = "black",
+            width = 1,
+            lineCap = "round",
+            paint = {{ canvas.max_paint }},
+            paintDisplay;
+        const SCROLL_SENSITIVITY = -0.0005;
+
+        function  getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect(),      // abs. size of element
+                scaleX = canvas.width / rect.width,         // relationship bitmap vs. element for x
+                scaleY = canvas.height / rect.height;       // relationship bitmap vs. element for y
+
+            return {
+                x: (evt.clientX - rect.left) * scaleX,      // scale mouse coordinates after they have
+                y: (evt.clientY - rect.top) * scaleY        // been adjusted to be relative to element
+            }
+        }
+
+        function getRealMousePos(canvas, evt) {
+            let pos = getMousePos(visibleCanvas, evt);        // get adjusted coordinates as above
+            let matrix = visibleCtx.getTransform();         // W3C (future)
+            let imatrix = matrix.invertSelf();              // invert
+
+            // apply to point:
+            return {
+                x: pos.x * imatrix.a + pos.y * imatrix.c + imatrix.e,
+                y: pos.x * imatrix.b + pos.y * imatrix.d + imatrix.f
+            }
+        }
+
+        // Gets the relevant location from a mouse or single touch event
+        function getEventLocation(e)
+        {
+            if (e.touches && e.touches.length == 1)
+            {
+                return { x:e.touches[0].clientX, y: e.touches[0].clientY }
+            }
+            else if (e.clientX && e.clientY)
+            {
+                return { x: e.clientX, y: e.clientY }
+            }
+        }
+
+        function onPointerDown(e)
+        {
+            if (e.button === 2) {
+                panning = true
+                dragStart.x = getEventLocation(e).x/zoom - cameraOffset.x
+                dragStart.y = getEventLocation(e).y/zoom - cameraOffset.y
+            } else if (e.button === 0) {
+                drawing = true
+                currPos = getRealMousePos(visibleCanvas, e);
+            }
+        }
+
+        function onPointerUp(e)
+        {
+            drawing = false
+            panning = false
+            initialPinchDistance = null
+            lastZoom = zoom
+        }
+
+        function onPointerMove(e) {
+            if (panning)
+            {
+                cameraOffset.x = getEventLocation(e).x/zoom - dragStart.x
+                cameraOffset.y = getEventLocation(e).y/zoom - dragStart.y
+            } else if (drawing) {
+                prevPos = currPos;
+                currPos = getRealMousePos(visibleCanvas, e);
+                draw()
+            }
+        }
+
+        function handleTouch(e, singleTouchHandler) {
+            if ( e.touches.length == 1 )
+            {
+                singleTouchHandler(e)
+            }
+            else if (e.type == "touchmove" && e.touches.length == 2)
+            {
+                panning = false
+                handlePinch(e)
+            }
+        }
+
+        function handlePinch(e) {
+            e.preventDefault()
+
+            let touch1 = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+            let touch2 = { x: e.touches[1].clientX, y: e.touches[1].clientY }
+
+            // This is distance squared, but no need for an expensive sqrt as it's only used in ratio
+            let currentDistance = (touch1.x - touch2.x)**2 + (touch1.y - touch2.y)**2
+
+            if (initialPinchDistance == null)
+            {
+                initialPinchDistance = currentDistance
+            }
+            else
+            {
+                adjustZoom( null, currentDistance/initialPinchDistance )
+            }
+        }
+
+        function adjustZoom(zoomAmount, zoomFactor)
+        {
+            // we want the canvas to be able to show the entire canvas plus the margin at min zoom
+            //                                      and a minimum of 100px at max zoom
+            const MIN_ZOOM = Math.min(visibleCanvas.offsetWidth/(memCanvas.width+2*margin), visibleCanvas.offsetHeight/(memCanvas.height+2*margin)),
+                MAX_ZOOM = Math.max(visibleCanvas.offsetWidth/100, visibleCanvas.offsetHeight/100);
+            if (!panning)
+            {
+                if (zoomAmount)
+                {
+                    zoom += zoomAmount
+                }
+                else if (zoomFactor)
+                {
+                    console.log(zoomFactor)
+                    zoom = zoomFactor*lastZoom
+                }
+
+                zoom = Math.min( zoom, MAX_ZOOM )
+                zoom = Math.max( zoom, MIN_ZOOM )
+            }
+        }
+
+        function draw() {
+            memCtx.beginPath();
+            memCtx.moveTo(prevPos.x, prevPos.y);
+            memCtx.lineTo(currPos.x, currPos.y);
+            paintDisplay.value -= (Math.sqrt((prevPos.x-currPos.x)**2 + (prevPos.y-currPos.y)**2) + 1)*width
+            memCtx.strokeStyle = color;
+            memCtx.lineWidth = width;
+            memCtx.lineCap = lineCap;
+            memCtx.stroke();
+            memCtx.closePath();
+        }
+
+        function update() {
+            visibleCanvas.width = visibleCanvas.offsetWidth;
+            visibleCanvas.height = visibleCanvas.offsetHeight;
+
+            let bounds = {
+                x: [((zoom-1)*visibleCanvas.width)/(2*zoom) + margin, ((zoom+1)*visibleCanvas.width)/(2*zoom) - (memCanvas.width + margin)],
+                y: [((zoom-1)*visibleCanvas.height)/(2*zoom) + margin, ((zoom+1)*visibleCanvas.height)/(2*zoom) - (memCanvas.height + margin)]};
+            cameraOffset.x = clamp(cameraOffset.x,
+                Math.min(bounds.x[0], bounds.x[1]),
+                Math.max(bounds.x[0], bounds.x[1]))
+            cameraOffset.y = clamp(cameraOffset.y,
+                Math.min(bounds.y[0], bounds.y[1]),
+                Math.max(bounds.y[0], bounds.y[1]))
+
+            visibleCtx.setTransform(1, 0, 0, 1, 0, 0);
+            visibleCtx.translate( visibleCanvas.offsetWidth / 2, visibleCanvas.offsetHeight / 2 )
+            visibleCtx.scale(zoom, zoom);
+            visibleCtx.translate( -visibleCanvas.offsetWidth / 2 + cameraOffset.x, -visibleCanvas.offsetHeight / 2 + cameraOffset.y);
+            visibleCtx.clearRect(0, 0, visibleCanvas.width, visibleCanvas.height);
+            visibleCtx.drawImage(memCanvas, 0, 0);
+
+            requestAnimationFrame(update)
+        }
+
+        function init() {
+            memCanvas = document.createElement("canvas");
+            memCanvas.width = 4000;
+            memCanvas.height = 4000;
+
+            cameraOffset = { x: -memCanvas.width / 2, y: -memCanvas.height / 2}
+
+            memCtx = memCanvas.getContext("2d");
+            visibleCanvas = document.getElementById("canvas");
+            visibleCtx = visibleCanvas.getContext("2d");
+            paintDisplay = document.getElementById("paint_level")
+
+            visibleCanvas.width = visibleCanvas.offsetWidth;
+            visibleCanvas.height = visibleCanvas.offsetHeight;
+
+            visibleCanvas.addEventListener("pointerdown", onPointerDown);
+            visibleCanvas.addEventListener('touchstart', (e) => handleTouch(e, onPointerDown))
+            visibleCanvas.addEventListener("pointerup", onPointerUp);
+            visibleCanvas.addEventListener('touchend', (e) => handleTouch(e, onPointerUp))
+            visibleCanvas.addEventListener("pointermove", onPointerMove);
+            visibleCanvas.addEventListener('touchmove', (e) => handleTouch(e, onPointerMove))
+            visibleCanvas.addEventListener("wheel", function (e) {
+                adjustZoom(e.deltaY*SCROLL_SENSITIVITY)
+                /*cameraOffset = getRealMousePos(visibleCanvas, e)
+                console.log(cameraOffset)
+                cameraOffset.x = -cameraOffset.x + visibleCanvas.width/2
+                cameraOffset.y = -cameraOffset.y + visibleCanvas.height/2*/
+            })
+            visibleCanvas.addEventListener("contextmenu", function (e) {
+                e.preventDefault();
+            }, false);
+            update()
+        }
+
+        init()
+    </script>
+{% endblock %}

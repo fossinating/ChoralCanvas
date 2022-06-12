@@ -57,7 +57,7 @@ def preview_canvas(canvas_id):
 def edit_canvas(canvas_id):
     if request.method == "GET":
         try:
-            return render_template("canvas_preview.html", canvas=get_canvas(canvas_id))
+            return render_template("canvas_edit.html", canvas=get_canvas(canvas_id))
         except CanvasNotFoundError:
             return render_template("invalid_canvas.html")
 

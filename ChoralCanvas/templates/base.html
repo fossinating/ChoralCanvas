@@ -3,6 +3,7 @@
     <title>{% block title %}{% endblock %} - Coral Canvas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block head %}{% endblock %}
+    {% include '_requesthelper.html' %}
 </head>
 <body>
     <nav>
@@ -20,7 +21,7 @@
     </nav>
     <messages>
         {% for message in get_flashed_messages() %}
-        <div class="flash">{{ message }}</div>
+            <div class="flash">{{ message }}</div>
         {% endfor %}
     </messages>
     <main>
