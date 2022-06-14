@@ -40,17 +40,16 @@
             width = 1,
             lineCap = "round",
             paint = {{ canvas.max_paint }},
-            paintDisplay;
+            paintDisplay,
+            rect;
         const SCROLL_SENSITIVITY = -0.0005;
 
         function  getMousePos(canvas, evt) {
-            var rect = canvas.getBoundingClientRect(),      // abs. size of element
-                scaleX = canvas.width / rect.width,         // relationship bitmap vs. element for x
-                scaleY = canvas.height / rect.height;       // relationship bitmap vs. element for y
+            let position = getEventLocation(evt);
 
             return {
-                x: (evt.clientX - rect.left) * scaleX,      // scale mouse coordinates after they have
-                y: (evt.clientY - rect.top) * scaleY        // been adjusted to be relative to element
+                x: (position.x - rect.left),      // scale mouse coordinates after they have
+                y: (position.y - rect.top)        // been adjusted to be relative to element
             }
         }
 
@@ -81,11 +80,12 @@
 
         function onPointerDown(e)
         {
-            if (e.button === 2) {
+            console.log("down")
+            if (e.button === 2 || e.pointerType === "touch" && true) {
                 panning = true
                 dragStart.x = getEventLocation(e).x/zoom - cameraOffset.x
                 dragStart.y = getEventLocation(e).y/zoom - cameraOffset.y
-            } else if (e.button === 0) {
+            } else if (e.button === 0 && (e.pointerType === "mouse" || e.pointerType === "pen" || (e.pointerType === "touch" && false))) {
                 drawing = true
                 currPos = getRealMousePos(visibleCanvas, e);
             }
@@ -107,11 +107,16 @@
             } else if (drawing) {
                 prevPos = currPos;
                 currPos = getRealMousePos(visibleCanvas, e);
+                if (isNaN(currPos.x) || isNaN(currPos.y)){
+                    currPos = prevPos;
+                    return;
+                }
                 draw()
             }
         }
 
         function handleTouch(e, singleTouchHandler) {
+            e.preventDefault();
             if ( e.touches.length == 1 )
             {
                 singleTouchHandler(e)
@@ -211,6 +216,7 @@
             memCtx = memCanvas.getContext("2d");
             visibleCanvas = document.getElementById("canvas");
             visibleCtx = visibleCanvas.getContext("2d");
+            rect = visibleCanvas.getBoundingClientRect();
             paintDisplay = document.getElementById("paint_level")
 
             visibleCanvas.width = visibleCanvas.offsetWidth;
