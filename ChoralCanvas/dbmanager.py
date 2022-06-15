@@ -9,8 +9,10 @@ def init():
     init_db()
 
 
-def create_canvas(canvas_id, owner, max_paint, paint_regen, allow_anonymous, access_type):
-    new_canvas = Canvas(id=canvas_id, owner=owner, max_paint=max_paint, paint_regen=paint_regen,
+def create_canvas(canvas_id, owner, max_paint, width, height, paint_recharge_amount, paint_recharge_time,
+                  allow_anonymous, access_type):
+    new_canvas = Canvas(id=canvas_id, owner=owner, max_paint=max_paint, width=width, height=height,
+                        paint_recharge_amount=paint_recharge_amount, paint_recharge_time=paint_recharge_time,
                         allow_anonymous=allow_anonymous, access=access_type)
     db_session.add(new_canvas)
     db_session.commit()

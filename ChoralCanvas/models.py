@@ -1,4 +1,6 @@
+import datetime
 import enum
+import math
 import uuid
 
 from sqlalchemy.dialects.postgresql import UUID
@@ -8,7 +10,7 @@ from flask_security import UserMixin, RoleMixin
 from sqlalchemy import create_engine, Enum
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, DateTime, Column, Integer, \
-    String, ForeignKey, Text
+    String, ForeignKey, Text, SmallInteger
 
 
 class CanvasAccess(enum.Enum):
@@ -22,10 +24,13 @@ class Canvas(Base):
     id = Column(String(12), primary_key=True)
     owner = Column('owner_id', UUID(as_uuid=True), ForeignKey('user.id'))
     max_paint = Column(Integer)
-    paint_regen = Column(Integer)
+    width = Column(SmallInteger)
+    height = Column(SmallInteger)
+    # paint recharge times are saved in minutes, granting recharge_amount every recharge_time minutes
+    paint_recharge_amount = Column(Integer)
+    paint_recharge_time = Column(Integer)
     allow_anonymous = Column(Boolean)
     access = Column(Enum(CanvasAccess))
-    canvas_image = Column(Text)
 
     def can_user_access(self, user):
         if self.access == CanvasAccess.PUBLIC:
@@ -34,6 +39,39 @@ class Canvas(Base):
             return False  # test if user is in group
         elif self.access == CanvasAccess.LOC:
             raise NotImplementedError("Location based access not implemented yet")  # not implemented yet
+
+
+class Mark(Base):
+    __tablename__ = "canvas_mark"
+    id = Column(Integer, primary_key=True)
+    canvas_id = Column(String(12), ForeignKey('canvas.id'))
+    canvas = relationship('Canvas',
+                          backref=backref('marks', lazy='dynamic'))
+    startX = Column(SmallInteger)
+    startY = Column(SmallInteger)
+    endX = Column(SmallInteger)
+    endY = Column(SmallInteger)
+    color = Column(String(8))
+    lineWidth = Column(SmallInteger)
+    lineCap = Column(String(8))
+    marker_id = Column(UUID(as_uuid=True), ForeignKey('user.id'))
+    marker = relationship('User',
+                          backref=backref('marks', lazy='dynamic'))
+
+    def to_dict(self):
+        return {
+            "startPos": {
+                "x": self.startX,
+                "y": self.startY
+            },
+            "endPos": {
+                "x": self.endX,
+                "y": self.endY
+            },
+            "color": self.color,
+            "lineWidth": self.lineWidth,
+            "lineCap": self.lineCap
+        }
 
 
 # not even close to finalized yet
@@ -117,3 +155,42 @@ class User(Base, UserMixin):
     groups = relationship('Group', secondary='groups_users',
                           backref=backref('users', lazy='dynamic'))
     linked_accounts = relationship("LinkedAccount")
+
+    def get_paint_level(self, canvas):
+        return UserPaintLevel.query.filter_by(user=self, canvas=canvas).first()
+
+
+class UserPaintLevel(Base):
+    __tablename__ = "user_paint_level"
+    user_id = Column(UUID(as_uuid=True), ForeignKey('user.id'), primary_key=True)
+    user = relationship("User", backref=backref("paint_levels", lazy="dynamic"))
+    canvas_id = Column(String(12), ForeignKey('canvas.id'), primary_key=True)
+    canvas = relationship("Canvas")
+    level = Column(Integer)
+    last_updated_at = Column(DateTime)
+
+    def get_paint_level(self):
+        # calculate the updated paint level taking into account the time changes
+        # paint recharge times are saved in minutes, granting recharge_amount every recharge_time minutes
+        current_time = datetime.datetime.utcnow()
+        current_minute_interval = math.floor(current_time.timestamp() / 60 / self.canvas.paint_recharge_time)
+        last_updated_minute_interval = math.floor(self.last_updated_at.timestamp()
+                                                  / 60 / self.canvas.paint_recharge_time)
+        self.level = min(self.canvas.max_paint,
+                         self.level + self.canvas.paint_recharge_amount *
+                         (current_minute_interval - last_updated_minute_interval))
+        # update last_updated_at
+        self.last_updated_at = current_time
+
+        # return level
+        return self.level
+
+    def reduce_paint_level(self, amount):
+        # return true or false based on if user has enough paint to reduce, using get_paint_level
+        if self.get_paint_level() > amount:
+            self.level -= amount
+            print(self.level)
+            return True
+        else:
+            return False
+        # https://stackoverflow.com/questions/13304471/javascript-get-code-to-run-every-minute for client side
