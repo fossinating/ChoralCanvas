@@ -187,9 +187,8 @@ class UserPaintLevel(Base):
 
     def reduce_paint_level(self, amount):
         # return true or false based on if user has enough paint to reduce, using get_paint_level
-        if self.get_paint_level() > amount:
+        if self.get_paint_level() >= amount:
             self.level -= amount
-            print(self.level)
             return True
         else:
             return False

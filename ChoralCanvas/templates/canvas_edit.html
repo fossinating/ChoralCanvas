@@ -17,7 +17,7 @@ TODO: Make touch be able to draw without a pen
         <canvas id="canvas"></canvas>
         <div id="paint_level_container">
             <label for="paint_level">Paint Remaining:</label>
-            <progress id="paint_level" value="{{ canvas.max_paint }}" max="{{ canvas.max_paint }}"></progress>
+            <progress id="paint_level" value="{{ current_user.get_paint_level(canvas).get_paint_level() }}" max="{{ canvas.max_paint }}"></progress>
         </div>
         <div class="canvas_side_panel">
 
@@ -130,7 +130,6 @@ TODO: Make touch be able to draw without a pen
             let cost = Math.floor((Math.sqrt((prevPos.x-currPos.x)**2 + (prevPos.y-currPos.y)**2) + 1)*width)
             if (paintDisplay.value >= cost){
                 paintDisplay.value -= cost
-                console.log(paintDisplay.value)
                 let mark = {
                     startPos: prevPos,
                     endPos: currPos,
@@ -267,6 +266,14 @@ TODO: Make touch be able to draw without a pen
                 e.preventDefault();
             }, false);
             update()
+            scheduleRefill();
+        }
+
+        function scheduleRefill() {
+            setTimeout(function() {
+                paintDisplay.value = Math.min(paintDisplay.value + {{ canvas.paint_recharge_amount }}, {{ canvas.max_paint }});
+                scheduleRefill();
+            }, 60*1000*{{ canvas.paint_recharge_time }} - (Date.now() % (60*1000*{{ canvas.paint_recharge_time }})))
         }
 
         socket.on("mark_sync", drawMark);
