@@ -178,7 +178,7 @@ TODO: Make touch be able to draw without a pen
         {
             // we want the canvas to be able to show the entire canvas plus the margin at min zoom
             //                                      and a minimum of 100px at max zoom
-            const MIN_ZOOM = Math.min(visibleCanvas.offsetWidth/(memCanvas.width+2*margin), visibleCanvas.offsetHeight/(memCanvas.height+2*margin)),
+            const MIN_ZOOM = Math.min(visibleCanvas.offsetWidth/({{ canvas.width }}+2*margin), visibleCanvas.offsetHeight/({{ canvas.height }}+2*margin)),
                 MAX_ZOOM = Math.max(visibleCanvas.offsetWidth/100, visibleCanvas.offsetHeight/100);
             if (!panning)
             {
@@ -213,8 +213,8 @@ TODO: Make touch be able to draw without a pen
             visibleCanvas.height = visibleCanvas.offsetHeight;
 
             let bounds = {
-                x: [((zoom-1)*visibleCanvas.width)/(2*zoom) + margin, ((zoom+1)*visibleCanvas.width)/(2*zoom) - (memCanvas.width + margin)],
-                y: [((zoom-1)*visibleCanvas.height)/(2*zoom) + margin, ((zoom+1)*visibleCanvas.height)/(2*zoom) - (memCanvas.height + margin)]};
+                x: [((zoom-1)*visibleCanvas.width)/(2*zoom) + margin, ((zoom+1)*visibleCanvas.width)/(2*zoom) - ({{ canvas.width }} + margin)],
+                y: [((zoom-1)*visibleCanvas.height)/(2*zoom) + margin, ((zoom+1)*visibleCanvas.height)/(2*zoom) - ({{ canvas.height }} + margin)]};
             cameraOffset.x = clamp(cameraOffset.x,
                 Math.min(bounds.x[0], bounds.x[1]),
                 Math.max(bounds.x[0], bounds.x[1]))
@@ -234,10 +234,10 @@ TODO: Make touch be able to draw without a pen
 
         function init() {
             memCanvas = document.createElement("canvas");
-            memCanvas.width = 4000;
-            memCanvas.height = 4000;
+            memCanvas.width = {{ canvas.width }};
+            memCanvas.height = {{ canvas.height }};
 
-            cameraOffset = { x: -memCanvas.width / 2, y: -memCanvas.height / 2}
+            cameraOffset = { x: -{{canvas.width / 2 }}, y: -{{canvas.height / 2 }}}
 
             memCtx = memCanvas.getContext("2d");
             visibleCanvas = document.getElementById("canvas");
