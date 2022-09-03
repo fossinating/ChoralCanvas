@@ -14,7 +14,7 @@ class CanvasCreationForm(FlaskForm):
                                validators=[validators.InputRequired(message="Required"),
                                            validators.NumberRange(min=1, max=1000, message=
                                            "Paint regen rate must be between %(min)s and %(max)s")])
-    allow_anonymous = BooleanField("Allow Anonymous Painting", validators=[validators.InputRequired("Required")])
+    allow_anonymous = BooleanField("Allow Anonymous Painting")
 
     def validate_id(form, field):
         print("testing")

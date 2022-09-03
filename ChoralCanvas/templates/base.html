@@ -1,14 +1,14 @@
 <!doctype html>
 <head>
-    <title>{% block title %}{% endblock %} - Coral Canvas</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>{% block title %}{% endblock %} - Choral Canvas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
     {% include '_requesthelper.html' %}
 </head>
 <body>
     <nav>
       <ul>
-        <li class="navbar-left"><a href="/">Coral Canvas</a></li>
+        <li class="navbar-left"><a href="/">Choral Canvas</a></li>
         {# <li class="navbar-left"><a href="/browse">Browse</a></li> #}
         {% if current_user.is_authenticated %}
             <li class="navbar-right"><a href="{{ url_for('security.logout') }}">Log Out</a>

@@ -7,7 +7,7 @@ TODO: Make touch be able to draw without a pen
 
 {% extends 'base.html' %}
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='canvas_style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_style.css') }}">
 {% endblock %}
 {% block title %}
     {{ canvas.name }}
@@ -20,12 +20,16 @@ TODO: Make touch be able to draw without a pen
             <progress id="paint_level" value="{{ current_user.get_paint_level(canvas).get_paint_level() }}" max="{{ canvas.max_paint }}"></progress>
         </div>
         <div class="canvas_side_panel">
-
+            <p>
+		        <input type="text" data-wheelcolorpicker="" data-wcp-sliders="wrgbp" data-wcp-layout="block">
+            </p>
         </div>
     </div>
 {% endblock %}
 
 {% block script %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='/js/jquery.wheelcolorpicker.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
     <script>
         // Clamp number between two values with the following line:
