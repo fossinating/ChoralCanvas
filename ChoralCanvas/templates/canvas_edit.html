@@ -17,7 +17,7 @@ TODO: Make touch be able to draw without a pen
         <canvas id="canvas"></canvas>
         <div id="paint_level_container">
             <label for="paint_level">Paint Remaining:</label>
-            <progress id="paint_level" value="{{ current_user.get_paint_level(canvas).get_paint_level() }}" max="{{ canvas.max_paint }}"></progress>
+            <progress id="paint_level" value="{{ profile.get_paint_level() }}" max="{{ canvas.max_paint }}"></progress>
         </div>
         <div class="canvas_side_panel">
             <p>
@@ -141,7 +141,7 @@ TODO: Make touch be able to draw without a pen
                     lineWidth: width,
                     lineCap: lineCap
                 }
-                socket.emit("mark", mark)
+                queueMark(mark)
                 drawMark(mark);
             }
         }
@@ -210,6 +210,32 @@ TODO: Make touch be able to draw without a pen
             memCtx.lineCap = mark.lineCap;
             memCtx.stroke();
             memCtx.closePath();
+        }
+
+        function drawMarks(marks) {
+            console.log(marks)
+            for (const mark_id in marks) {
+                drawMark(marks[mark_id]);
+            }
+        }
+
+        marks = []
+        markTimer = null;
+
+        function queueMark(mark) {
+            marks.push(mark)
+            if (markTimer == null) {
+                markTimer = setTimeout(sendQueue, 500)
+                window.onbeforeunload = sendQueue;
+            }
+        }
+
+        function sendQueue() {
+            socket.emit("marks", marks);
+            marks = []
+            markTimer = null;
+            window.onbeforeunload = null;
+            return null;
         }
 
         function update() {
@@ -281,6 +307,7 @@ TODO: Make touch be able to draw without a pen
         }
 
         socket.on("mark_sync", drawMark);
+        socket.on("marks_sync", drawMarks);
         socket.on("user_sync", function(data) {
             paintDisplay.value = data.paintLevel;
         })

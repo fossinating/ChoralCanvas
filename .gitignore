@@ -221,3 +221,5 @@ htmlcov/
 # dont save the database lmao
 
 test.db
+ChoralCanvas/secret_manager.py
+secret_manager.py

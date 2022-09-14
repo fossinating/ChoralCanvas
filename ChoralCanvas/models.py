@@ -3,14 +3,17 @@ import enum
 import math
 import uuid
 
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import UUID
 
-from database import Base
 from flask_security import UserMixin, RoleMixin
 from sqlalchemy import create_engine, Enum
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, DateTime, Column, Integer, \
     String, ForeignKey, Text, SmallInteger
+
+
+db = SQLAlchemy()
 
 
 class CanvasAccess(enum.Enum):
@@ -19,7 +22,7 @@ class CanvasAccess(enum.Enum):
     LOC = 3
 
 
-class Canvas(Base):
+class Canvas(db.Model):
     __tablename__ = 'canvas'
     id = Column(String(12), primary_key=True)
     owner = Column('owner_id', UUID(as_uuid=True), ForeignKey('user.id'))
@@ -41,7 +44,7 @@ class Canvas(Base):
             raise NotImplementedError("Location based access not implemented yet")  # not implemented yet
 
 
-class Mark(Base):
+class Mark(db.Model):
     __tablename__ = "canvas_mark"
     id = Column(Integer, primary_key=True)
     canvas_id = Column(String(12), ForeignKey('canvas.id'))
@@ -75,14 +78,14 @@ class Mark(Base):
 
 
 # not even close to finalized yet
-"""class CanvasLocAccess(Base):
+"""class CanvasLocAccess(db.Model):
     __tablename__ = 'canvas_loc_access'
     canvas_id = Column('canvas_id', String(255), ForeignKey('canvas.id'))
     description = Column(String(255))
 """
 
 
-class CanvasGroupAccess(Base):
+class CanvasGroupAccess(db.Model):
     __tablename__ = 'canvas_group_access'
     canvas_id = Column('canvas_id', String(12), ForeignKey('canvas.id'), primary_key=True)
     group_id = Column("group_id", UUID(as_uuid=True), ForeignKey('user.id'))
@@ -96,7 +99,7 @@ class GroupAccess(enum.Enum):
     INVITE_ONLY = 5
 
 
-class Group(Base):
+class Group(db.Model):
     __tablename__ = 'group'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     display_name = Column(String(255), nullable=False)
@@ -106,7 +109,7 @@ class Group(Base):
                            backref=backref('group', lazy='dynamic'))
 
 
-class LinkedAccount(Base):
+class LinkedAccount(db.Model):
     __tablename__ = "linked_accounts"
     link_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     linked_account_type = Column(String(255), nullable=False)
@@ -115,28 +118,28 @@ class LinkedAccount(Base):
     linked_on = Column(DateTime)
 
 
-class GroupsUsers(Base):
+class GroupsUsers(db.Model):
     __tablename__ = "groups_users"
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), primary_key=True)
     group_id = Column(UUID(as_uuid=True), ForeignKey("group.id"), primary_key=True)
     join_date = Column(DateTime())
 
 
-class RolesUsers(Base):
+class RolesUsers(db.Model):
     __tablename__ = 'roles_users'
     id = Column(Integer(), primary_key=True)
     user_id = Column('user_id', UUID(as_uuid=True), ForeignKey('user.id'))
     role_id = Column('role_id', Integer(), ForeignKey('role.id'))
 
 
-class Role(Base, RoleMixin):
+class Role(db.Model, RoleMixin):
     __tablename__ = 'role'
     id = Column(Integer(), primary_key=True)
     name = Column(String(80), unique=True)
     description = Column(String(255))
 
 
-class User(Base, UserMixin):
+class User(db.Model, UserMixin):
     __tablename__ = 'user'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True)
@@ -156,14 +159,11 @@ class User(Base, UserMixin):
                           backref=backref('users', lazy='dynamic'))
     linked_accounts = relationship("LinkedAccount")
 
-    def get_paint_level(self, canvas):
-        return UserPaintLevel.query.filter_by(user=self, canvas=canvas).first()
 
-
-class UserPaintLevel(Base):
-    __tablename__ = "user_paint_level"
+class UserCanvasProfile(db.Model):
+    __tablename__ = "user_canvas_profile"
     user_id = Column(UUID(as_uuid=True), ForeignKey('user.id'), primary_key=True)
-    user = relationship("User", backref=backref("paint_levels", lazy="dynamic"))
+    user = relationship("User", backref=backref("profiles", lazy="dynamic"))
     canvas_id = Column(String(12), ForeignKey('canvas.id'), primary_key=True)
     canvas = relationship("Canvas")
     level = Column(Integer)
